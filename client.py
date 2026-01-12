@@ -1,7 +1,7 @@
 import pyxel
 from network import Network
 
-net = Network("192.168.0.106", 12341)
+net = Network("192.168.3.63", 12341)
 board = [[""] * 3 for _ in range(3)]
 winner = None
 
