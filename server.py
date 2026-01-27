@@ -12,6 +12,7 @@ board = [[""] * 3 for _ in range(3)]
 players = []
 current = "X"
 
+
 def check_winner():
     lines = board + list(zip(*board)) + [
         [board[i][i] for i in range(3)],
@@ -46,3 +47,4 @@ while True:
 
             for p in players:
                 sock.sendto(json.dumps(resposta).encode(), p)
+
