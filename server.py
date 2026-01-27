@@ -8,9 +8,13 @@ sock.bind(("", PORTA))
 
 print(f"Servidor do jogo rodando na porta {PORTA}")
 
+# ===============================
+# ESTADO DO JOGO
+# ===============================
 board = [[""] * 3 for _ in range(3)]
-players = []
+players = {}        # addr -> "X" ou "O"
 current = "X"
+winner = None
 
 
 def check_winner():
@@ -23,28 +27,57 @@ def check_winner():
             return line[0]
     return None
 
+
+def broadcast(data):
+    for addr in players:
+        sock.sendto(json.dumps(data).encode(), addr)
+
+
 while True:
     data, addr = sock.recvfrom(4096)
     msg = json.loads(data.decode())
 
-    # registrar jogadores
-    if msg["type"] == "join" and addr not in players:
-        players.append(addr)
-        print(f"Jogador conectado: {addr}")
+    # ===============================
+    # ENTRAR NO JOGO
+    # ===============================
+    if msg["type"] == "join":
+        if addr not in players and len(players) < 2:
+            symbol = "X" if "X" not in players.values() else "O"
+            players[addr] = symbol
 
-    # jogada
+            print(f"Jogador {symbol} conectado: {addr}")
+
+            sock.sendto(json.dumps({
+                "type": "start",
+                "symbol": symbol,
+                "board": board,
+                "current": current
+            }).encode(), addr)
+        continue
+
+    # ===============================
+    # JOGADA
+    # ===============================
     if msg["type"] == "move":
+        if addr not in players:
+            continue
+
+        symbol = players[addr]
+
+        # só joga se for a vez dele e não acabou
+        if symbol != current or winner:
+            continue
+
         r, c = msg["row"], msg["col"]
-        if board[r][c] == "":
-            board[r][c] = current
+
+        if 0 <= r < 3 and 0 <= c < 3 and board[r][c] == "":
+            board[r][c] = symbol
             winner = check_winner()
             current = "O" if current == "X" else "X"
 
-            resposta = {
+            broadcast({
+                "type": "update",
                 "board": board,
-                "winner": winner
-            }
-
-            for p in players:
-                sock.sendto(json.dumps(resposta).encode(), p)
-
+                "winner": winner,
+                "current": current
+            })

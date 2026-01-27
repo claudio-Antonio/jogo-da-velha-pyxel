@@ -1,6 +1,7 @@
 import json
 from socket import *
 
+
 class Network:
     def __init__(self, host, porta):
         self.addr = (host, porta)
